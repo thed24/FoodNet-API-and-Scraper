@@ -1,0 +1,3 @@
+google-services-api==0.0.8
+webdriver-manager
+pynamodb

@@ -1,0 +1,85 @@
+service: food-net-api
+
+provider:
+  name: aws
+  runtime: python3.6
+  region: ap-southeast-2
+  environment:
+    DYNAMODB_TABLE: aggregateDataTable
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Scan
+        - dynamodb:Query
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:GetItem
+      Resource:
+        - "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+        - "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/sk-pk-index"
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    pythonBin: /usr/bin/python3
+
+functions:
+  list:
+    handler: restaurant_endpoints/list.get_restaurants
+    events:
+      - http:
+          path: restaurants
+          method: get
+          cors: true
+
+  get:
+    handler: restaurant_endpoints/get.get_restaurant
+    events:
+      - http:
+          path: restaurants/{restaurant_name}
+          method: get
+          cors: true
+          integration: lambda
+          request:
+            paths:
+              restaurant_id: true
+
+resources:
+  Resources:
+    aggregateDataTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: aggregate-data
+        AttributeDefinitions:
+          - AttributeName: name
+            AttributeType: S
+          - AttributeName: area
+            AttributeType: S
+        KeySchema:
+          - AttributeName: name
+            KeyType: HASH
+          - AttributeName: area
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        GlobalSecondaryIndexes:
+        - IndexName: sk-pk-index
+          KeySchema:
+          - AttributeName: name
+            KeyType: HASH
+          - AttributeName: area
+            KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+
+package:
+  exclude:
+    - node_modules/**
+    - venv/**
