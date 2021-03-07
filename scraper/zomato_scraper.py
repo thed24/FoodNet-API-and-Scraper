@@ -28,7 +28,7 @@ def scrape_zomato():
         print('Opening Search Pages ' + str(i))
 
         # Replace MELBOURNE with location, RICHMOND with in-depth location
-        driver.get('https://www.zomato.com/melbourne/richmond-restaurants?page={}'.format(i))
+        driver.get('https://www.zomato.com/melbourne/sunshine-north-restaurants?page={}'.format(i))
         print('Accessing Webpage OK \n')
         results = driver.find_elements_by_class_name("result-title")
         print(driver.title)

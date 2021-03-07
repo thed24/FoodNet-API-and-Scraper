@@ -47,20 +47,20 @@ class GooglePlaces(object):
         return place_details
 
 
-def check_for_filters(review_text, extra_filters):
+def check_for_filters(review_text, filter_dict):
     if "wifi".upper() in map(str.upper, review_text):
-        extra_filters["wifi"] += 1
+        filter_dict["wifi"] += 1
     if "vegan".upper() in map(str.upper, review_text):
-        extra_filters["vegan"] += 1
+        filter_dict["vegan"] += 1
     if "wheelchair".upper() in map(str.upper, review_text):
-        extra_filters["wheelchair"] += 1
+        filter_dict["wheelchair"] += 1
     if "train".upper() in map(str.upper, review_text):
-        extra_filters["train"] += 1
+        filter_dict["train"] += 1
 
 
 if __name__ == '__main__':
     api = GooglePlaces(os.environ["GOOGLE_PLACES_API_KEY"])
-    places = api.search_places_by_suburb("-37.823002 144.998001, Melbourne", "100", "restaurant")
+    places = api.search_places_by_suburb("-37.823002 144.998001", "300", "restaurant")
     print("Places found: " + str(len(places)))
     fields = ['name', 'formatted_address', 'international_phone_number',
               'rating', 'review', "opening_hours", "price_level"]
@@ -73,7 +73,6 @@ if __name__ == '__main__':
             "wifi": 0,
             "currently_open": "",
             "near_train": 0,
-            "price_level": ""
         }
 
         if 'result' in details:
@@ -113,18 +112,18 @@ if __name__ == '__main__':
 
             try:
                 price_level = details['result']['price_level']
-                price_level_text = \
-                    "Free" if price_level == 0 else \
-                    "Inexpensive" if price_level == 1 else \
-                    "Moderate" if price_level == 2 else \
-                    "Expensive" if price_level == 3 else \
-                    "Very Expensive" if price_level == 4 else "Not Listed"
-                extra_filters["price_level"] = price_level_text
+                current_restaurant.price_indicator = str(price_level)
             except KeyError:
                 None
 
             try:
                 extra_filters["currently_open"] = details['result']['opening_hours']['open_now']
+            except KeyError:
+                None
+
+            try:
+                opening_hours = details['result']['opening_hours']['periods']
+                current_restaurant.open_hours = str(opening_hours)
             except KeyError:
                 None
 
