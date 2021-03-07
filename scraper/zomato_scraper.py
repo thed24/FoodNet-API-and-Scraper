@@ -61,18 +61,18 @@ def scrape_zomato():
 
             print(f'Scraping Restaurant Name - {name} - OK')
 
+            # Create DynamoDB entity or get existing entry
+            try:
+                current_restaurant = Restaurant.get(rest_name, "Zomato")
+            except Restaurant.DoesNotExist:
+                current_restaurant = Restaurant(rest_name, "Zomato")
+
             # Restaurant Area
             rest_area_anchor = driver.find_element_by_xpath(
                 """/html/body/div[1]/div[2]/main/div/section[3]/section/section[1]/section[1]/a""")
             rest_area_text = rest_area_anchor.text
             rest_area = rest_area_text
             print(f'Scraping Restaurant Area - {name} - {rest_area_text} - OK')
-
-            # Create DynamoDB entity or get existing entry
-            try:
-                current_restaurant = Restaurant.get(rest_name, rest_area)
-            except Restaurant.DoesNotExist:
-                current_restaurant = Restaurant(rest_name, rest_area)
 
             # Restaurant Type
             rest_type_list_string = ""
@@ -81,7 +81,8 @@ def scrape_zomato():
 
             for rest_type_anchor in rest_type_eltlist:
                 rest_type_text = rest_type_anchor.text
-                rest_type_list_string = rest_type_list_string + ", " + rest_type_text
+                rest_type_list_string = \
+                    rest_type_list_string + ", " + rest_type_text if rest_type_list_string != "" else rest_type_text
 
             current_restaurant.types = rest_type_list_string
             print(f'Scraping Restaurant Type - {name} - {rest_type_list_string} - OK')
@@ -166,16 +167,19 @@ def scrape_zomato():
             for addt_info_anchor in addt_info_eltlist:
                 if isinstance(addt_info_anchor, str):
                     addt_info_text = addt_info_anchor
-                    addt_info_list_string = addt_info_list_string + ", " + addt_info_text
+                    addt_info_list_string = \
+                        addt_info_list_string + ", " + addt_info_text \
+                            if addt_info_list_string != "" else addt_info_list_string
                 else:
                     addt_info_text = addt_info_anchor.text
-                    addt_info_list_string = addt_info_list_string + ", " + addt_info_text
+                    addt_info_list_string = \
+                        addt_info_list_string + ", " + addt_info_text \
+                            if addt_info_list_string != "" else addt_info_list_string
 
             current_restaurant.info = addt_info_list_string
             print(f'Scraping Restaurant Additional Info - {name} - {addt_info_text} - OK')
 
             # Save to ORM
-            current_restaurant.service = "Zomato"
             current_restaurant.save()
 
     driver.close()

@@ -47,38 +47,54 @@ class GooglePlaces(object):
         return place_details
 
 
-def check_for_filters(review_text):
-    extra_filters = {
-        "vegan": 0,
-        "handicap_options": 0,
-        "wifi": 0,
-        "currently_open": False
-    }
-
+def check_for_filters(review_text, extra_filters):
     if "wifi".upper() in map(str.upper, review_text):
         extra_filters["wifi"] += 1
-
-    return json.dumps(extra_filters)
+    if "vegan".upper() in map(str.upper, review_text):
+        extra_filters["vegan"] += 1
+    if "wheelchair".upper() in map(str.upper, review_text):
+        extra_filters["wheelchair"] += 1
+    if "train".upper() in map(str.upper, review_text):
+        extra_filters["train"] += 1
 
 
 if __name__ == '__main__':
     api = GooglePlaces(os.environ["GOOGLE_PLACES_API_KEY"])
-    places = api.search_places_by_suburb("37.8230 144.9980, Melbourne", "100", "restaurant")
+    places = api.search_places_by_suburb("-37.823002 144.998001, Melbourne", "100", "restaurant")
     print("Places found: " + str(len(places)))
-    fields = ['name', 'formatted_address', 'international_phone_number', 'rating', 'review']
+    fields = ['name', 'formatted_address', 'international_phone_number',
+              'rating', 'review', "opening_hours", "price_level"]
+
     for place in places:
         details = api.get_place_details(place['place_id'], fields)
+        extra_filters = {
+            "vegan": 0,
+            "handicap_options": 0,
+            "wifi": 0,
+            "currently_open": "",
+            "near_train": 0,
+            "price_level": ""
+        }
 
         if 'result' in details:
             rest_name = details['result']['name']
-            rest_area = details['result']['formatted_address']
             print(rest_name)
 
             # Create DynamoDB entity or get existing entry
             try:
-                current_restaurant = Restaurant.get(rest_name, rest_area)
+                current_restaurant = Restaurant.get(rest_name, "Google")
             except Restaurant.DoesNotExist:
-                current_restaurant = Restaurant(rest_name, rest_area)
+                current_restaurant = Restaurant(rest_name, "Google")
+
+            try:
+                current_restaurant.address = details['result']['formatted_address']
+            except KeyError:
+                current_restaurant.address = ""
+
+            try:
+                current_restaurant.rating = str(details['result']['rating'])
+            except KeyError:
+                current_restaurant.rating = ""
 
             try:
                 current_restaurant.phone = details['result']['international_phone_number']
@@ -90,9 +106,27 @@ if __name__ == '__main__':
             except KeyError:
                 reviews = []
 
+            current_restaurant.review = str(len(reviews)) + " Reviews"
             for review in reviews:
                 text = str(review['text'])
-                current_restaurant.info = check_for_filters(text)
+                check_for_filters(text, extra_filters)
 
-            current_restaurant.service = "Google"
+            try:
+                price_level = details['result']['price_level']
+                price_level_text = \
+                    "Free" if price_level == 0 else \
+                    "Inexpensive" if price_level == 1 else \
+                    "Moderate" if price_level == 2 else \
+                    "Expensive" if price_level == 3 else \
+                    "Very Expensive" if price_level == 4 else "Not Listed"
+                extra_filters["price_level"] = price_level_text
+            except KeyError:
+                None
+
+            try:
+                extra_filters["currently_open"] = details['result']['opening_hours']['open_now']
+            except KeyError:
+                None
+
+            current_restaurant.info = json.dumps(extra_filters)
             current_restaurant.save()

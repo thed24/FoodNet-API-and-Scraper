@@ -19,7 +19,7 @@ class Restaurant(Model):
         return rval
 
     name = UnicodeAttribute(hash_key=True)
-    area = UnicodeAttribute(range_key=True)
+    area = UnicodeAttribute(null=True)
     types = UnicodeAttribute(null=True)
     rating = UnicodeAttribute(null=True)
     review = UnicodeAttribute(null=True)
@@ -28,4 +28,4 @@ class Restaurant(Model):
     phone = UnicodeAttribute(null=True)
     info = UnicodeAttribute(null=True)
     additional_info = UnicodeAttribute(null=True)
-    service = UnicodeAttribute(null=True)
+    service = UnicodeAttribute(range_key=True)
