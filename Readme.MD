@@ -1,4 +1,4 @@
-FoodNet is a Hackathon project to aggregate food review data and display it via a React front-end. This repo contains two projects which supply the front-end with data. The React front-end can be found here: https://github.com/Flumm3ry/FoodNetUi.
+FoodNet is a Hackathon project to aggregate food review data and display it via a React front-end. This repo contains two projects which supply the front-end with data and was made in two days. The React front-end can be found here: https://github.com/Flumm3ry/FoodNetUi.
 
 # FoodNet Scrapers
 
@@ -12,3 +12,6 @@ Python scripts that run daily via a cronjob sitting in AWS Lambda. They format t
 
 A Python API that uses PynamoDB ORM to retrieve all the items in the DB, merge the duplicate entries and output them via a simple GET endpoint. 
 
+# Try It Out!
+
+https://devpost.com/software/foodnet
