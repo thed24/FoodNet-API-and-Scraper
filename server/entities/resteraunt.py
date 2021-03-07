@@ -7,9 +7,16 @@ from pynamodb.attributes import UnicodeAttribute
 class Restaurant(Model):
     class Meta:
         table_name = "aggregate-data"
-        aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
-        aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+        if "IN_LAMBDA" not in os.environ:
+            aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
+            aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
         region = 'ap-southeast-2'
+
+    def to_dict(self):
+        rval = {}
+        for key in self.attribute_values:
+            rval[key] = self.__getattribute__(key)
+        return rval
 
     name = UnicodeAttribute(hash_key=True)
     area = UnicodeAttribute(range_key=True)
@@ -21,3 +28,4 @@ class Restaurant(Model):
     phone = UnicodeAttribute(null=True)
     info = UnicodeAttribute(null=True)
     additional_info = UnicodeAttribute(null=True)
+    service = UnicodeAttribute(null=True)

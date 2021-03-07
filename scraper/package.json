@@ -1,0 +1,10 @@
+{
+  "name": "food-net-bff",
+  "version": "1.0.0",
+  "description": "BFF for food-net front-end",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "serverless-python-requirements": "5.1.0"
+  }
+}

@@ -1,0 +1,32 @@
+service: food-net-scrapers
+
+provider:
+  name: aws
+  runtime: python3.6
+  region: ap-southeast-2
+  timeout: 900
+
+layers:
+  chromedriver:
+    path: chromedriver_binary
+    description: "chrome driver layer"
+    CompatibleRuntimes: [
+      "python3.6"
+    ]
+
+functions:
+  scrape_zomato:
+    handler: zomato_scraper.scrape_zomato
+    events:
+      - schedule:
+          rate: rate(12 hours)
+    layers:
+      - {Ref: ChromedriverLambdaLayer}
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+    pythonBin: /usr/bin/python3
