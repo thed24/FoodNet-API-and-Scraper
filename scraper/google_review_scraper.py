@@ -1,9 +1,8 @@
-import csv
-
 import requests
 import json
 import time
 import os, sys, inspect
+from suburbs import getMelbourneSuburbs
 from geopy.geocoders import Nominatim
 
 
@@ -60,88 +59,96 @@ def check_for_filters(review_text, filter_dict):
         filter_dict["wheelchair"] += 1
     if "train".upper() in map(str.upper, review_text):
         filter_dict["train"] += 1
+    return filter_dict
 
 
-def scrape_google():
-    with open('suburbs.csv') as suburbs:
-        csv_reader = csv.reader(suburbs, delimiter=',')
-        for row in csv_reader:
-            for suburb in row:
-                gn = Nominatim(user_agent="thed24")
-                suburb_long_lat = gn.geocode(suburb)
-                api = GooglePlaces(os.environ["GOOGLE_PLACES_API_KEY"])
-                places = api.search_places_by_suburb(
-                    str(suburb_long_lat.latitude) + "," + str(suburb_long_lat.longitude), "300", "restaurant"
-                )
-                print("Places found: " + str(len(places)))
-                fields = ['name', 'formatted_address', 'international_phone_number',
-                          'rating', 'review', "opening_hours", "price_level"]
+def scrape_google(event, context):
+    for suburb in getMelbourneSuburbs():
+        gn = Nominatim(user_agent="thed24")
+        suburb_long_lat = gn.geocode(suburb)
+        api = GooglePlaces(os.environ["GOOGLE_PLACES_API_KEY"])
+        places = api.search_places_by_suburb(
+            str(suburb_long_lat.latitude) + "," + str(suburb_long_lat.longitude), "300", "restaurant"
+        )
+        print("Places found: " + str(len(places)))
+        fields = ['name', 'formatted_address', 'international_phone_number',
+                    'rating', 'review', "opening_hours", "price_level"]
 
-                for place in places:
-                    details = api.get_place_details(place['place_id'], fields)
-                    extra_filters = {
-                        "vegan": 0,
-                        "handicap_options": 0,
-                        "wifi": 0,
-                        "currently_open": "",
-                        "near_train": 0,
-                    }
+        for place in places:
+            details = api.get_place_details(place['place_id'], fields)
+            extra_filters = {
+                "vegan": 0,
+                "handicap_options": 0,
+                "wifi": 0,
+                "currently_open": "",
+                "near_train": 0,
+            }
 
-                    if 'result' in details:
-                        rest_name = details['result']['name']
-                        print(rest_name)
+            if 'result' in details:
+                rest_name = details['result']['name']
+                print(rest_name)
 
-                        # Create DynamoDB entity or get existing entry
-                        try:
-                            current_restaurant = Restaurant.get(rest_name, "Google")
-                        except Restaurant.DoesNotExist:
-                            current_restaurant = Restaurant(rest_name, "Google")
+                # Create DynamoDB entity or get existing entry
+                try:
+                    current_restaurant = Restaurant.get(rest_name, "Google")
+                except Restaurant.DoesNotExist:
+                    current_restaurant = Restaurant(rest_name, "Google")
 
-                        try:
-                            current_restaurant.address = details['result']['formatted_address']
-                        except KeyError:
-                            current_restaurant.address = ""
+                try:
+                    current_restaurant.address = details['result']['formatted_address']
+                except KeyError:
+                    current_restaurant.address = ""
 
-                        try:
-                            current_restaurant.rating = str(details['result']['rating'])
-                        except KeyError:
-                            current_restaurant.rating = ""
+                try:
+                    current_restaurant.rating = str(details['result']['rating'])
+                except KeyError:
+                    current_restaurant.rating = ""
 
-                        try:
-                            current_restaurant.phone = details['result']['international_phone_number']
-                        except KeyError:
-                            current_restaurant.phone = ""
+                try:
+                    current_restaurant.phone = details['result']['international_phone_number']
+                except KeyError:
+                    current_restaurant.phone = ""
 
-                        try:
-                            reviews = details['result']['reviews']
-                        except KeyError:
-                            reviews = []
+                try:
+                    reviews = details['result']['reviews']
+                except KeyError:
+                    reviews = []
 
-                        current_restaurant.review = str(len(reviews)) + " Reviews"
-                        for review in reviews:
-                            text = str(review['text'])
-                            check_for_filters(text, extra_filters)
+                current_restaurant.review = str(len(reviews)) + " Reviews"
+                for review in reviews:
+                    text = str(review['text'])
+                    extra_filters = check_for_filters(text, extra_filters)
 
-                        try:
-                            price_level = details['result']['price_level']
-                            current_restaurant.price_indicator = str(price_level)
-                        except KeyError:
-                            None
+                try:
+                    price_level = details['result']['price_level']
+                    current_restaurant.price_indicator = str(price_level)
+                except KeyError:
+                    None
 
-                        try:
-                            extra_filters["currently_open"] = details['result']['opening_hours']['open_now']
-                        except KeyError:
-                            None
+                try:
+                    extra_filters["currently_open"] = details['result']['opening_hours']['open_now']
+                except KeyError:
+                    None
 
-                        try:
-                            opening_hours = details['result']['opening_hours']['periods']
-                            current_restaurant.open_hours = str(opening_hours)
-                        except KeyError:
-                            None
+                try:
+                    opening_hours = details['result']['opening_hours']['periods']
+                    current_restaurant.open_hours = str(opening_hours)
+                except KeyError:
+                    None
 
-                        current_restaurant.info = json.dumps(extra_filters)
+                current_restaurant.info = json.dumps(extra_filters)
+
+                for x in range(0, 4):
+                    try:
                         current_restaurant.save()
+                        str_error = None
+                    except Exception as str_error:
+                        pass
 
+                    if str_error:
+                        time.sleep(2)
+                    else:
+                        break
 
 if __name__ == '__main__':
     scrape_google()
