@@ -68,7 +68,7 @@ def scrape_google(event, context):
         suburb_long_lat = gn.geocode(suburb)
         api = GooglePlaces(os.environ["GOOGLE_PLACES_API_KEY"])
         places = api.search_places_by_suburb(
-            str(suburb_long_lat.latitude) + "," + str(suburb_long_lat.longitude), "300", "restaurant"
+            str(suburb_long_lat.latitude) + "," + str(suburb_long_lat.longitude), "100", "restaurant"
         )
         print("Places found: " + str(len(places)))
         fields = ['name', 'formatted_address', 'international_phone_number',
@@ -142,8 +142,8 @@ def scrape_google(event, context):
                     try:
                         current_restaurant.save()
                         str_error = None
-                    except Exception as str_error:
-                        pass
+                    except Exception as error:
+                        str_error = str(error)
 
                     if str_error:
                         time.sleep(2)

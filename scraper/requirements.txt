@@ -1,8 +1,7 @@
-numpy
 google-services-api==0.0.8
 webdriver-manager
 pynamodb
 geopy
-pandas
+requests
 selenium
 typing_extensions

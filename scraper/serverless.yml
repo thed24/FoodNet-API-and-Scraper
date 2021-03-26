@@ -21,7 +21,7 @@ provider:
 
 layers:
   chromedriver:
-    path: chromedriver_binary
+    path: headless-chromium
     description: "chrome driver layer"
     CompatibleRuntimes: [
       "python3.6"
@@ -45,8 +45,6 @@ functions:
     events:
       - schedule:
           rate: rate(12 hours)
-    layers:
-      - { Ref: ChromedriverLambdaLayer }
 
 plugins:
   - serverless-python-requirements

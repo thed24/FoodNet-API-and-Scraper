@@ -2,7 +2,6 @@ import os
 import sys
 import inspect
 import time
-import pandas as pd
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -15,8 +14,8 @@ current_dir = os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe())))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
-from server.entities.resteraunt import Restaurant
 
+from server.entities.resteraunt import Restaurant
 
 options = Options()
 user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'
@@ -32,7 +31,7 @@ driver = webdriver.Chrome(ChromeDriverManager(
 
 def scrape_zomato(event, context):
     for suburb in getMelbourneSuburbs():
-        for i in range(1, 4):
+        for i in range(1, 2):
             url = 'https://www.zomato.com/melbourne/{0}-restaurants?page={1}'.format(
                 suburb.lower(), i)
             driver.get(url)
@@ -47,13 +46,8 @@ def scrape_zomato(event, context):
                 url = result.get_attribute("href")
                 out_lst.append(url)
 
-            out_df = pd.DataFrame(out_lst, columns=['Website'])
-
-            out_df_nd = out_df[~out_df.duplicated(
-                ['Website'], keep='first')]
-
-            # Scrape the data by looping through entries in DataFrame
-            for url in out_df_nd['Website']:
+            # Scrape the data by looping through entries in list
+            for url in out_lst:
                 driver.get(url)
                 time.sleep(6)
                 print('Accessing Webpage OK')
@@ -209,8 +203,8 @@ def scrape_zomato(event, context):
                     try:
                         current_restaurant.save()
                         str_error = None
-                    except Exception as str_error:
-                        pass
+                    except Exception as error:
+                        str_error = str(error)
 
                     if str_error:
                         time.sleep(2)
